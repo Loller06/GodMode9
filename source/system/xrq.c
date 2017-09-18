@@ -6,6 +6,7 @@
 #include "common.h"
 #include "fsinit.h"
 #include "fsutil.h"
+#include "qrcodegen.h"
 #include "power.h"
 #include "rtc.h"
 #include "hid.h"
@@ -75,15 +76,6 @@ void XRQ_DumpRegisters(u32 xrq, u32 *regs)
     ClearScreen(MAIN_SCREEN, COLOR_STD_BG);
     DrawStringF(MAIN_SCREEN, draw_x, draw_y, COLOR_STD_FONT, COLOR_STD_BG, dumpstr);
 
-    
-    /* Reinitialize SD */
-    DrawStringF(MAIN_SCREEN, draw_x, draw_y_upd, COLOR_STD_FONT, COLOR_STD_BG,
-        "%-29.29s", "Reinitializing SD card...");
-    while (!InitSDCardFS()) {
-        if (InputWait(1) & BUTTON_POWER) PowerOff();
-        DeinitSDCardFS();
-    }
-
 
     /* Dump STACK */
     sp = regs[13] & ~0xF;
@@ -100,6 +92,41 @@ void XRQ_DumpRegisters(u32 xrq, u32 *regs)
         wstr += XRQ_DumpData_u16(wstr, pc-PC_DUMPRAD, pc+PC_DUMPRAD);
     } else {
         wstr += XRQ_DumpData_u32(wstr, pc-PC_DUMPRAD, pc+PC_DUMPRAD);
+    }
+    
+    
+    /* Draw QR Code */
+    if ((MAIN_BUFFER_SIZE >= qrcodegen_BUFFER_LEN_MAX) &&
+        (TEMP_BUFFER_SIZE >= qrcodegen_BUFFER_LEN_MAX * 8 * BYTES_PER_PIXEL)) {
+        u8* qrcode = (u8*) MAIN_BUFFER;
+        u8* temp = (u8*) TEMP_BUFFER;
+        u8* bitmap = temp;
+        DrawStringF(MAIN_SCREEN, draw_x, draw_y_upd, COLOR_STD_FONT, COLOR_STD_BG,
+            "%-29.29s", "Generating QR code...");
+        if (qrcodegen_encodeText(dumpstr, temp, qrcode, qrcodegen_Ecc_HIGH,
+            qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true)) {
+            u8* ptr = bitmap;
+            u32 size = qrcodegen_getSize(qrcode);
+            for (u32 y = 0; y < size; y++) {
+                for (u32 x = 0; x < size; x++) {
+                    u8 color = qrcodegen_getModule(qrcode, x, y) ? 0x00 : 0xFF;
+                    *(ptr++) = color;
+                    *(ptr++) = color;
+                    *(ptr++) = color;
+                }
+            }
+            ClearScreen(ALT_SCREEN, COLOR_WHITE);
+            DrawBitmap(ALT_SCREEN, (SCREEN_WIDTH_ALT - size) / 2, (SCREEN_HEIGHT - size) / 2, size, size, bitmap);
+        }
+    }
+
+    
+    /* Reinitialize SD */
+    DrawStringF(MAIN_SCREEN, draw_x, draw_y_upd, COLOR_STD_FONT, COLOR_STD_BG,
+        "%-29.29s", "Reinitializing SD card...");
+    while (!InitSDCardFS()) {
+        if (InputWait(1) & BUTTON_POWER) PowerOff();
+        DeinitSDCardFS();
     }
 
 
