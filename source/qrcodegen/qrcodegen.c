@@ -21,7 +21,8 @@
  *   Software.
  */
 
-#include <assert.h>
+// #include <assert.h>
+#define assert (void)
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -196,7 +197,7 @@ testable void appendBitsToBuffer(unsigned int val, int numBits, uint8_t buffer[]
 // and will be clobbered by this function. The final answer is stored in result[0 : rawCodewords].
 testable void appendErrorCorrection(uint8_t data[], int version, enum qrcodegen_Ecc ecl, uint8_t result[]) {
 	// Calculate parameter numbers
-	assert(0 <= (int)ecl && (int)ecl < 4 && qrcodegen_VERSION_MIN <= version && version <= qrcodegen_VERSION_MAX);
+	// assert(0 <= (int)ecl && (int)ecl < 4 && qrcodegen_VERSION_MIN <= version && version <= qrcodegen_VERSION_MAX);
 	int numBlocks = NUM_ERROR_CORRECTION_BLOCKS[(int)ecl][version];
 	int blockEccLen = ECC_CODEWORDS_PER_BLOCK[(int)ecl][version];
 	int rawCodewords = getNumRawDataModules(version) / 8;
@@ -891,7 +892,7 @@ bool qrcodegen_encodeSegmentsAdvanced(const struct qrcodegen_Segment segs[], siz
 		int minVersion, int maxVersion, int mask, bool boostEcl, uint8_t tempBuffer[], uint8_t qrcode[]) {
 	assert(segs != NULL || len == 0);
 	assert(qrcodegen_VERSION_MIN <= minVersion && minVersion <= maxVersion && maxVersion <= qrcodegen_VERSION_MAX);
-	assert(0 <= (int)ecl && (int)ecl <= 3 && -1 <= (int)mask && (int)mask <= 7);
+	// assert(0 <= (int)ecl && (int)ecl <= 3 && -1 <= (int)mask && (int)mask <= 7);
 	
 	// Find the minimal version number to use
 	int version, dataUsedBits;
@@ -1018,6 +1019,7 @@ static int numCharCountBits(enum qrcodegen_Mode mode, int version) {
 		case qrcodegen_Mode_BYTE        : { const int temp[] = { 8, 16, 16}; return temp[i]; }
 		case qrcodegen_Mode_KANJI       : { const int temp[] = { 8, 10, 12}; return temp[i]; }
 		case qrcodegen_Mode_ECI         : return 0;
-		default:  assert(false);
+		// default:  assert(false);
+        default: return -1;
 	}
 }

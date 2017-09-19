@@ -94,34 +94,13 @@ void XRQ_DumpRegisters(u32 xrq, u32 *regs)
 
 
     /* Draw QR Code */
-    if ((MAIN_BUFFER_SIZE >= qrcodegen_BUFFER_LEN_MAX) &&
-        (TEMP_BUFFER_SIZE >= qrcodegen_BUFFER_LEN_MAX * 8 * BYTES_PER_PIXEL)) {
-        u8* qrcode = (u8*) MAIN_BUFFER;
-        u8* temp = (u8*) TEMP_BUFFER;
-        u8* bitmap = temp;
-        DrawStringF(MAIN_SCREEN, draw_x, draw_y_upd, COLOR_STD_FONT, COLOR_STD_BG,
-            "%-29.29s", "Generating QR code...");
-        if (qrcodegen_encodeText(dumpstr, temp, qrcode, qrcodegen_Ecc_LOW,
-            qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true)) {
-            u8* ptr = bitmap;
-            u32 size = qrcodegen_getSize(qrcode);
-            u32 scale = (size + 8 < SCREEN_HEIGHT / 2) ? 2 : 1; 
-            u32 ssize = size * scale;
-            for (u32 y = 0; y < ssize; y++) {
-                for (u32 x = 0; x < ssize; x++) {
-                    u8 color = qrcodegen_getModule(qrcode, x/scale, y/scale) ? 0x00 : 0xFF;
-                    *(ptr++) = color;
-                    *(ptr++) = color;
-                    *(ptr++) = color;
-                }
-            }
-            
-            const u32 x_qr = (SCREEN_WIDTH_ALT - ssize) / 2;
-            const u32 y_qr = (SCREEN_HEIGHT - ssize) / 2;
-            ClearScreen(ALT_SCREEN, COLOR_STD_BG);
-            DrawRectangle(ALT_SCREEN, x_qr - 8, y_qr - 8, ssize + 16, ssize + 16, COLOR_WHITE);
-            DrawBitmap(ALT_SCREEN, x_qr, y_qr, ssize, ssize, bitmap);
-        }
+    u8 qrcode[qrcodegen_BUFFER_LEN_MAX];
+    u8 temp[qrcodegen_BUFFER_LEN_MAX];
+    DrawStringF(MAIN_SCREEN, draw_x, draw_y_upd, COLOR_STD_FONT, COLOR_STD_BG,
+        "%-29.29s", "Generating QR code...");
+    if (qrcodegen_encodeText(dumpstr, temp, qrcode, qrcodegen_Ecc_LOW,
+        qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true)) {
+        DrawQrCode(ALT_SCREEN, qrcode);
     }
 
     
